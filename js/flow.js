@@ -105,9 +105,12 @@
       if (res.win) {
         F.solo.streak++;
         if (F.solo.streak > F.soloStreakMax) F.soloStreakMax = F.solo.streak;
-        // 升级：每胜利一关 +1 级
+        // 升级：每胜利一关 +1 级，立即存档（防中途退出丢进度）
         F.level++;
-        if (F.level > (F.saveData.levelMax || 0)) F.saveData.levelMax = F.level;
+        if (F.level > (F.saveData.levelMax || 0)) {
+          F.saveData.levelMax = F.level;
+          GP.save.write(F.saveData);
+        }
       } else {
         F.solo.lives--;
         F.solo.streak = 0;
@@ -162,12 +165,14 @@
     }
     if (survivors <= 1) {
       F.winner = winner;
-      // 记录排行榜
-      var entry = { name: F.winner ? F.winner.name : '无人', score: F.winner ? F.winner.score : 0, mode: 'party', date: new Date().toLocaleDateString() };
-      F.saveData.lb.push(entry);
-      F.saveData.lb.sort(function (a, b) { return b.score - a.score; });
-      if (F.saveData.lb.length > CFG.LB_MAX) F.saveData.lb.length = CFG.LB_MAX;
-      GP.save.write(F.saveData);
+      // 记录排行榜（只记正分）
+      if (F.winner && F.winner.score > 0) {
+        var entry = { name: F.winner.name, score: F.winner.score, mode: 'party', date: new Date().toLocaleDateString() };
+        F.saveData.lb.push(entry);
+        F.saveData.lb.sort(function (a, b) { return b.score - a.score; });
+        if (F.saveData.lb.length > CFG.LB_MAX) F.saveData.lb.length = CFG.LB_MAX;
+        GP.save.write(F.saveData);
+      }
       F.afterResult2 = 'gameover';
     } else {
       F.roundIdx++;
@@ -179,11 +184,13 @@
   function advanceResult() {
     if (F.mode === 'solo') {
       if (F.solo.lives <= 0) {
-        // 存档
-        var e2 = { name: '你', score: F.solo.score, mode: 'solo', date: new Date().toLocaleDateString() };
-        F.saveData.lb.push(e2);
-        F.saveData.lb.sort(function (a, b) { return b.score - a.score; });
-        if (F.saveData.lb.length > CFG.LB_MAX) F.saveData.lb.length = CFG.LB_MAX;
+        // 存档（只记正分）
+        if (F.solo.score > 0) {
+          var e2 = { name: '你', score: F.solo.score, mode: 'solo', date: new Date().toLocaleDateString() };
+          F.saveData.lb.push(e2);
+          F.saveData.lb.sort(function (a, b) { return b.score - a.score; });
+          if (F.saveData.lb.length > CFG.LB_MAX) F.saveData.lb.length = CFG.LB_MAX;
+        }
         GP.save.write(F.saveData);
         F.state = 'gameover';
       } else {
@@ -246,9 +253,23 @@
 
   // ---------- 主循环 ----------
   var last = 0;
+  var wasHidden = false;
   function tick() {
     var now = GP.now();
-    var dt = Math.min(1, (now - last) / 1000 || 0.016);
+    if (GP.isHidden()) {
+      // 切后台：时间暂停，回来不丢时间也不烧时间
+      wasHidden = true;
+      last = now;
+      GP.raf(tick);
+      return;
+    }
+    if (wasHidden) {
+      // 从后台恢复：重置基准，不追算后台时长
+      wasHidden = false;
+      last = now;
+    }
+    // 推进真实流速：帧间隔多少就消耗多少（上限 5s 防卡死跳帧/物理爆炸）
+    var dt = Math.min(5, (now - last) / 1000 || 0.016);
     last = now;
     update(dt);
     draw(dt);
