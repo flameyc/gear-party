@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>齿轮派对 Gear Party — 浏览器预览版</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #101216; overflow: hidden; }
+  #game { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  #tip { position: fixed; left: 0; right: 0; bottom: 6px; text-align: center; color: rgba(255,255,255,.35); font: 12px sans-serif; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="tip">浏览器预览版（键鼠/触屏均可） · 正式版请在微信开发者工具中运行</div>
+<script>
+  window.__err = '';
+  window.addEventListener('error', function (e) { window.__err += 'ERR:' + e.message + ' @' + (e.filename || '').split('/').pop() + ':' + e.lineno + '; '; });
+  window.addEventListener('unhandledrejection', function (e) { window.__err += 'REJ:' + (e.reason && e.reason.message || e.reason) + '; '; });
+</script>
+<script src="js/config.js"></script>
+<script src="js/platform.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/render.js"></script>
+<script src="js/players.js"></script>
+<script src="js/difficulty.js"></script>
+<script src="js/minigames/common.js"></script>
+<script src="js/minigames/minefield.js"></script>
+<script src="js/minigames/gearstorm.js"></script>
+<script src="js/minigames/ladder.js"></script>
+<script src="js/minigames/patternpad.js"></script>
+<script src="js/minigames/stealparts.js"></script>
+<script src="js/minigames/assembly.js"></script>
+<script src="js/flow.js"></script>
+<script>GP && GP.flow && GP.flow.boot();</script>
+</body>
+</html>
