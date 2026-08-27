@@ -2,17 +2,125 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>齿轮派对 Gear Party — 浏览器预览版</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>齿轮派对 Gear Party — 在线玩</title>
 <style>
-  html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #101216; overflow: hidden; }
-  #game { display: block; width: 100vw; height: 100vh; touch-action: none; }
-  #tip { position: fixed; left: 0; right: 0; bottom: 6px; text-align: center; color: rgba(255,255,255,.35); font: 12px sans-serif; pointer-events: none; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: radial-gradient(1100px 700px at 18% 12%, #1b2028 0%, #0d0f13 55%), #0d0f13;
+    overflow: hidden;
+    font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+    color: #9aa5b1;
+  }
+  /* ---- 背景齿轮氛围（纯 CSS） ---- */
+  .bg { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .gear {
+    position: absolute; border-radius: 50%; opacity: .07;
+    background: repeating-conic-gradient(from 0deg, #ffc400 0deg 18deg, transparent 18deg 36deg);
+    -webkit-mask: radial-gradient(circle, transparent 56%, #000 58%, #000 74%, transparent 76%);
+    mask: radial-gradient(circle, transparent 56%, #000 58%, #000 74%, transparent 76%);
+    animation: spin linear infinite;
+  }
+  .gear.g1 { width: 360px; height: 360px; left: -100px; top: -110px; animation-duration: 42s; }
+  .gear.g2 { width: 230px; height: 230px; right: -50px; top: 12%; animation-duration: 30s; animation-direction: reverse; }
+  .gear.g3 { width: 300px; height: 300px; left: 6%; bottom: -120px; animation-duration: 55s; }
+  .gear.g4 { width: 150px; height: 150px; right: 10%; bottom: 4%; animation-duration: 24s; animation-direction: reverse; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---- 页面布局 ---- */
+  .page {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: center; gap: 40px;
+    height: 100dvh; height: 100vh; /* dvh 优先，兼容不支持的老浏览器 */
+    padding: 12px;
+  }
+  .panel { display: none; width: 300px; flex: 0 0 300px; }
+  .panel h1 { margin: 0 0 4px; font-size: 36px; letter-spacing: 3px; color: #e8ecf1; }
+  .panel .sub { margin-bottom: 16px; font-size: 14px; color: #ffc400; }
+  .panel h2 { margin: 18px 0 6px; font-size: 14px; color: #e8ecf1; letter-spacing: 1px; }
+  .panel p, .panel li { font-size: 13px; line-height: 1.9; }
+  .panel ul { margin: 0; padding-left: 18px; }
+  .panel a { color: #ffc400; text-decoration: none; }
+  .panel a:hover { text-decoration: underline; }
+  .badge { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 10px; border: 1px solid #3a414c; border-radius: 999px; font-size: 12px; color: #c8d0da; }
+
+  /* ---- 游戏画面 ---- */
+  .col { display: flex; flex-direction: column; align-items: center; }
+  .stage {
+    position: relative;
+    width: min(calc(100vw - 24px), calc((100dvh - 60px) * 750 / 1334));
+    aspect-ratio: 750 / 1334;
+  }
+  #game {
+    display: block; width: 100%; height: 100%;
+    border-radius: 18px;
+    box-shadow: 0 26px 90px rgba(0,0,0,.65), 0 0 0 1px #2c323c, 0 0 0 6px #161a20;
+    touch-action: none;
+  }
+  .tip { margin-top: 10px; text-align: center; font-size: 12px; color: rgba(255,255,255,.4); }
+
+  /* 宽屏（桌面）：显示两侧信息面板 */
+  @media (min-width: 1150px) {
+    .panel { display: block; }
+    .stage { width: min(calc((100dvh - 70px) * 750 / 1334), calc(100vw - 760px)); }
+  }
+  /* 很矮的横屏窗口（手机横屏等）：隐藏面板，纯游戏更合理 */
+  @media (max-height: 520px) {
+    .panel { display: none; }
+    .stage { width: min(calc(100vw - 24px), calc((100dvh - 60px) * 750 / 1334)); }
+  }
 </style>
 </head>
 <body>
-<canvas id="game"></canvas>
-<div id="tip">浏览器预览版（键鼠/触屏均可） · 正式版请在微信开发者工具中运行</div>
+<div class="bg">
+  <div class="gear g1"></div><div class="gear g2"></div>
+  <div class="gear g3"></div><div class="gear g4"></div>
+</div>
+
+<div class="page">
+  <aside class="panel">
+    <h1>齿轮派对</h1>
+    <div class="sub">GEAR PARTY · 输了就报废的工厂派对</div>
+    <p>参考「死亡派对」类型的机械淘汰小游戏：随机小游戏连闯，输了就出局——和朋友一起挑战谁活到最后。</p>
+    <h2>两种模式</h2>
+    <ul>
+      <li>⚡ 单人挑战 — 3 条命冲最高分，难度随关卡上升</li>
+      <li>👥 本地派对 — 2-4 人轮流同屏，每回合最低分扣 1 命</li>
+    </ul>
+    <h2>六个小游戏</h2>
+    <p>
+      <span class="badge">💣 地雷阵</span><span class="badge">⚙️ 齿轮风暴</span><span class="badge">🪜 爬梯狂飙</span>
+      <span class="badge">🔲 图案踩格</span><span class="badge">🔧 偷零件</span><span class="badge">🏭 装配流水线</span>
+    </p>
+    <h2>开源</h2>
+    <p><a href="https://github.com/flameyc/gear-party" target="_blank" rel="noopener">GitHub 仓库 ↗</a> · 原生 Canvas 零依赖</p>
+  </aside>
+
+  <main class="col">
+    <div class="stage"><canvas id="game"></canvas></div>
+    <div class="tip">电脑：鼠标操作 · 手机：触屏操作 · 排行榜保存在本机浏览器</div>
+  </main>
+
+  <aside class="panel">
+    <h2>🕹️ 操作方式</h2>
+    <ul>
+      <li><b>拖动</b> — 移动机器人（地雷阵 / 齿轮风暴）</li>
+      <li><b>快速滑动</b> — 按提示方向滑动（爬梯狂飙）</li>
+      <li><b>点按</b> — 踩格 / 装配零件</li>
+      <li><b>按住</b> — 趁看守低头时偷零件</li>
+    </ul>
+    <h2>💡 提示</h2>
+    <ul>
+      <li>排行榜与最高纪录保存在本机浏览器</li>
+      <li>手机自动适配，横竖屏均可玩</li>
+      <li>想玩微信版？用微信开发者工具导入本项目即可</li>
+    </ul>
+    <h2>🎨 技术</h2>
+    <p>纯 Canvas 程序化绘制 · WebAudio 合成音效 · 网页/小游戏双端同一套代码</p>
+  </aside>
+</div>
+
 <script>
   window.__err = '';
   window.addEventListener('error', function (e) { window.__err += 'ERR:' + e.message + ' @' + (e.filename || '').split('/').pop() + ':' + e.lineno + '; '; });
