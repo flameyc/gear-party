@@ -14,6 +14,7 @@
     try { info = wx.getSystemInfoSync(); } catch (e) {}
     if (!info || !info.windowWidth) { try { info = wx.getWindowInfo(); } catch (e2) {} }
     canvas = g.canvas;
+    GP.canvasOff = { left: 0, top: 0 };
     var dpr = (info && info.pixelRatio) || 1;
     var winW = (info && info.windowWidth) || 750;
     var winH = (info && info.windowHeight) || 1334;
@@ -22,20 +23,24 @@
     ctx = canvas.getContext('2d');
     GP.SCREEN = { w: winW, h: winH, dpr: dpr };
   } else {
+    // 浏览器：以 canvas 实际展示尺寸（容器）为准，自动适配桌面/手机布局
     canvas = document.getElementById('game');
-    var br = window.devicePixelRatio || 1;
-    var cw = window.innerWidth, ch = window.innerHeight;
-    canvas.width = cw * br;
-    canvas.height = ch * br;
-    ctx = canvas.getContext('2d');
-    GP.SCREEN = { w: cw, h: ch, dpr: br };
-    window.addEventListener('resize', function () {
-      var b2 = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * b2;
-      canvas.height = window.innerHeight * b2;
-      GP.SCREEN = { w: window.innerWidth, h: window.innerHeight, dpr: b2 };
+    var lastRect = null;
+    function sizeFromContainer() {
+      var br = window.devicePixelRatio || 1;
+      var rect = canvas.getBoundingClientRect();
+      if (rect.width < 2 || rect.height < 2) return; // 布局未就绪
+      lastRect = rect;
+      canvas.width = Math.round(rect.width * br);
+      canvas.height = Math.round(rect.height * br);
+      GP.SCREEN = { w: rect.width, h: rect.height, dpr: br };
+      GP.canvasOff = { left: rect.left, top: rect.top };
       computeView();
-    });
+    }
+    ctx = canvas.getContext('2d');
+    sizeFromContainer();
+    window.addEventListener('resize', sizeFromContainer);
+    window.addEventListener('orientationchange', sizeFromContainer);
   }
   GP.canvas = canvas;
   GP.ctx = ctx;
@@ -54,7 +59,8 @@
     ctx.clearRect(0, 0, W, H);
   };
   GP.toLogical = function (x, y) {
-    return { x: (x - ox) / scale, y: (y - oy) / scale };
+    var off = GP.canvasOff || { left: 0, top: 0 };
+    return { x: (x - off.left - ox) / scale, y: (y - off.top - oy) / scale };
   };
 
   // ------- 输入 -------
