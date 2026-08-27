@@ -153,7 +153,26 @@
       }, 100);
     }
   };
-  GP.now = function () { return Date.now(); };
+
+  // 单调时钟（性能时钟优先，不受系统改时间影响）
+  var _nowFn = null;
+  GP.now = function () {
+    if (!_nowFn) {
+      var p = (typeof performance !== 'undefined') ? performance : null;
+      _nowFn = (p && typeof p.now === 'function') ? function () { return p.now(); } : function () { return Date.now(); };
+    }
+    return _nowFn();
+  };
+
+  // 页面隐藏暂停标记（微信：onHide/onShow；浏览器：document.hidden）
+  GP.__paused = false;
+  if (isWX) {
+    if (wx.onHide) wx.onHide(function () { GP.__paused = true; });
+    if (wx.onShow) wx.onShow(function () { GP.__paused = false; });
+  }
+  GP.isHidden = function () {
+    return GP.__paused || (typeof document !== 'undefined' && document.hidden);
+  };
 
   // 工具：随机
   GP.rand = function (a, b) { return a + Math.random() * (b - a); };
