@@ -1,0 +1,13 @@
+{
+  "description": "齿轮派对：参考「死亡派对」类型玩法的机械淘汰小游戏",
+  "compileType": "game",
+  "libVersion": "3.4.10",
+  "appid": "touristappid",
+  "projectname": "gear-party",
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "urlCheck": false
+  },
+  "condition": {}
+}
